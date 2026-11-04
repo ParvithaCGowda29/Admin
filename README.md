@@ -20,7 +20,7 @@ npm install
 npm run dev
 ```
 
-Runs on its own port, http://localhost:5174 (Masters stays on 5173).
+Runs on its own port, http://localhost:5180 (Masters stays on 5173).
 
 ## Notes
 
