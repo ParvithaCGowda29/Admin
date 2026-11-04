@@ -350,3 +350,6 @@
 :root[data-theme=dark] .skill-chip{background:#123f5b;color:#86d4ff}
 
 /* Import agent modal */
+
+/* Wider admin navigation keeps every section name on one line. */
+@media(min-width:601px){aside{width:320px}main{margin-left:320px;width:calc(100% - 320px)}.nav-branch .nav-item>span{overflow:visible;text-overflow:clip;white-space:nowrap}.master-info-panel{left:320px}}
