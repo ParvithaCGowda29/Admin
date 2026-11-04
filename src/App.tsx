@@ -16,7 +16,9 @@ const lightTheme=themeQuartz.withParams({accentColor:'#0084C2',backgroundColor:'
 const darkTheme=themeQuartz.withParams({accentColor:'#56b8ef',backgroundColor:'#17212f',foregroundColor:'#e2e9f2',headerBackgroundColor:'#202d3e',borderColor:'#36465a',fontFamily:'Inter, Arial, sans-serif',fontSize:14,headerFontSize:16,rowVerticalPaddingScale:1.2});
 // Admin Status cells render as pills: positive states green, everything else neutral.
 const STATUS_ON=/^(active|on|connected|enabled|paid|current)$/i;
-function StatusChip({value}:{value?:string}){const v=(value||'').trim();if(!v)return null;return <span className={'status-chip '+(STATUS_ON.test(v)?'on':'off')}>{v}</span>}
+const STATUS_WARN=/^paused$/i;
+const STATUS_INFO=/^scheduled$/i;
+function StatusChip({value}:{value?:string}){const v=(value||'').trim();if(!v)return null;const tone=STATUS_ON.test(v)?'on':STATUS_WARN.test(v)?'warn':STATUS_INFO.test(v)?'info':'off';return <span className={'status-chip '+tone}>{v}</span>}
 // Hover (i) beside a nav entry: the section summary plus its field guide.
 function AdminInfo({name,summary}:{name:string;summary:string}){
  const[open,setOpen]=useState(false);const closeTimer=useRef<ReturnType<typeof setTimeout>>();
