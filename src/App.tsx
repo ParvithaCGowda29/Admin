@@ -13,8 +13,8 @@ import {SortFilter} from './SortFilter';
 import {ADMIN_SHEETS,adminSheet} from './admin';
 ModuleRegistry.registerModules([AllCommunityModule]);
 // Same AG Grid Quartz parameters as the BuLLM Masters web.
-const lightTheme=themeQuartz.withParams({accentColor:'#0084C2',backgroundColor:'#ffffff',headerBackgroundColor:'#f5f7fa',borderColor:'#e5e9ef',fontFamily:'Inter, Arial, sans-serif',fontSize:14,headerFontSize:16,rowVerticalPaddingScale:1.2});
-const darkTheme=themeQuartz.withParams({accentColor:'#56b8ef',backgroundColor:'#17212f',foregroundColor:'#e2e9f2',headerBackgroundColor:'#202d3e',borderColor:'#36465a',fontFamily:'Inter, Arial, sans-serif',fontSize:14,headerFontSize:16,rowVerticalPaddingScale:1.2});
+const lightTheme=themeQuartz.withParams({accentColor:'#F2F9FD',backgroundColor:'#ffffff',headerBackgroundColor:'#F5F8FD',borderColor:'#DCE3EE',selectedRowBackgroundColor:'rgba(0,108,153,.10)',rowHoverColor:'rgba(15,27,45,.04)',fontFamily:'Inter, Arial, sans-serif',fontSize:14,headerFontSize:16,rowVerticalPaddingScale:1.2});
+const darkTheme=themeQuartz.withParams({accentColor:'#5B83F2',backgroundColor:'#101E32',foregroundColor:'#E6EDF7',headerBackgroundColor:'#142540',borderColor:'#22395C',selectedRowBackgroundColor:'rgba(91,131,242,.16)',rowHoverColor:'rgba(91,131,242,.07)',fontFamily:'Inter, Arial, sans-serif',fontSize:14,headerFontSize:16,rowVerticalPaddingScale:1.2});
 // Admin Status cells render as pills: positive states green, everything else neutral.
 const STATUS_ON=/^(active|on|connected|enabled|paid|current)$/i;
 const STATUS_WARN=/^paused$/i;
