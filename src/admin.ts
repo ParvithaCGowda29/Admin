@@ -25,7 +25,7 @@ export const ADMIN_SHEETS:AdminSheet[]=[
    {id:'seed-set-07',values:['SET-07','Default theme','System','UI','Per user','28-10-2026','Active']},
    {id:'seed-set-08',values:['SET-08','Maintenance mode','Off','Tenant','Admin','28-10-2026','Off']}]},
  {name:'User Management',noun:'users',summary:'Who can sign in and what they can touch.',
-  headers:['User ID','Name','Email','Role','Workspace','Last active','Status'],
+  headers:['User ID','Name','Email','Role','Workspace','Last active','Status','Model access','Token usage'],
   descriptions:[
    'Unique identifier for the user.',
    'Full name of the user.',
@@ -33,13 +33,15 @@ export const ADMIN_SHEETS:AdminSheet[]=[
    'Workspace role, such as Admin or FDE.',
    'Workspace or team the user belongs to.',
    'When the user last signed in.',
-   'Whether the user can sign in.'],
+   'Whether the user can sign in.',
+   'Which models the user may call, inherited from their role unless overridden.',
+   'Tokens used today against the rate limit inherited from their role.'],
   rows:[
-   {id:'seed-usr-01',values:['USR-01','Parvitha C','parvitha.c@digibull.ai','Admin','BuLLM','04-11-2026','Active']},
-   {id:'seed-usr-02',values:['USR-02','Srinath R','srinath.r@digibull.ai','Admin','BuLLM','03-11-2026','Active']},
-   {id:'seed-usr-03',values:['USR-03','Likith','likith@digibull.ai','FDE','BuLLM','02-11-2026','Active']},
-   {id:'seed-usr-04',values:['USR-04','Nagabhushana','nagabhushana@digibull.ai','FDE','BuLLM','01-11-2026','Active']},
-   {id:'seed-usr-05',values:['USR-05','Sriniketh','sriniketh@digibull.ai','Viewer','BuLLM','28-10-2026','Invited']}]},
+   {id:'seed-usr-01',values:['USR-01','Parvitha C','parvitha.c@digibull.ai','Admin','BuLLM','04-11-2026','Active','All models','41.2k / 1.0M today']},
+   {id:'seed-usr-02',values:['USR-02','Srinath R','srinath.r@digibull.ai','Admin','BuLLM','03-11-2026','Active','All models','12.8k / 1.0M today']},
+   {id:'seed-usr-03',values:['USR-03','Likith','likith@digibull.ai','FDE','BuLLM','02-11-2026','Active','Standard + frontier','96.4k / 500k today']},
+   {id:'seed-usr-04',values:['USR-04','Nagabhushana','nagabhushana@digibull.ai','FDE','BuLLM','01-11-2026','Active','Standard + frontier','22.1k / 500k today']},
+   {id:'seed-usr-05',values:['USR-05','Sriniketh','sriniketh@digibull.ai','Viewer','BuLLM','28-10-2026','Invited','Small models only','1.3k / 50k today']}]},
  {name:'Model Switching',noun:'models',summary:'Which model serves which slot, routed through the Bifrost gateway.',
   headers:['Model ID','Model','Provider','Tier','Use case','Default','Status'],
   descriptions:[
@@ -143,4 +145,61 @@ export const ADMIN_SHEETS:AdminSheet[]=[
    {id:'seed-eval-05',values:['EVAL-05','PII leakage scan','PII corpus v2 · 1.1k probes','On deploy · gate','0 leaks · 100% block','Parvitha C','Nov 3, 2026','Active']},
    {id:'seed-eval-06',values:['EVAL-06','Latency benchmark','p50 + p95 targets','Nightly','p50 412ms · p95 1.8s','Nagabhushana','Nov 4, 2026','Paused']}]},
 ];
-export function adminSheet(name:string){return ADMIN_SHEETS.find(s=>s.name===name);}
+// Activity stays OUT of ADMIN_SHEETS on purpose: the browser-storage key in provider.ts is
+// hashed from ADMIN_SHEETS, so adding a sheet there would orphan every saved row.
+export const ACTIVITY_SHEET:AdminSheet={name:'Activity',noun:'events',summary:'Demo audit trail: every save, add, delete and undo made in this browser, newest first. Not a server-side audit log.',readOnly:true,
+ headers:['Time','Section','Action','Record','Field','Old value','New value'],
+ descriptions:[
+  'When the change happened (dd-mm-yyyy hh:mm).',
+  'Admin section the change was made in.',
+  'What happened: Edit, Add, Delete or Undo delete.',
+  'ID of the record that changed.',
+  'Column that changed, or (row) for whole-row actions.',
+  'Value before the change.',
+  'Value after the change.'],
+ rows:[]};
+// Step 9 (doc Q6): User Management grows into "what each person can do, with which models, at
+// what cost, under which rules". Role-first: roles define the defaults, users inherit, and a
+// per-user exception is always visible as an override. Rate limits (throughput) and budgets
+// (spend) are different knobs and are shown separately. DEMO DATA ONLY - nothing here is
+// enforced; in production the allowlist and limits live on Bifrost virtual keys at the gateway.
+export type UserSkill={name:string;subs:string[];override?:boolean};
+export type UserModel={name:string;override?:boolean};
+export type UserLimit={label:string;value:string;override?:boolean};
+export type UserGuardrails={layer:string;items:string[]};
+export type UserDetail={inherits:string;skills:UserSkill[];models:UserModel[];rateLimits:UserLimit[];budgets:UserLimit[];guardrails:UserGuardrails[]};
+const ADMIN_DETAIL:Omit<UserDetail,'inherits'>={
+ skills:[{name:'Chat',subs:['General Q&A','Summaries']},{name:'Document QA',subs:['Upload & parse','Citation answers']},{name:'Code Assistant',subs:['Completion','Review']},{name:'Data Analyst',subs:['SQL runner','Charts']}],
+ models:[{name:'Claude Sonnet 4.5'},{name:'GPT-4o'},{name:'Gemini 2.5 Pro'},{name:'Whisper'},{name:'Llama 4 Maverick'}],
+ rateLimits:[{label:'Max tokens',value:'1.0M / day'},{label:'Max requests',value:'10,000 / day'},{label:'Resets',value:'Daily at midnight IST'}],
+ budgets:[{label:'Spend cap',value:'$500 / month'},{label:'Resets',value:'Monthly, calendar-aligned'}],
+ guardrails:[{layer:'Gateway (Bifrost key)',items:['PII redaction','Prompt-injection filter','Toxicity filter']},{layer:'Product',items:['Blocked topics list','Citation-required answers']}]};
+const FDE_DETAIL:Omit<UserDetail,'inherits'>={
+ skills:[{name:'Chat',subs:['General Q&A','Summaries']},{name:'Document QA',subs:['Upload & parse','Citation answers']},{name:'Code Assistant',subs:['Completion']}],
+ models:[{name:'Gemini 2.5 Pro'},{name:'Whisper'},{name:'Llama 4 Maverick'}],
+ rateLimits:[{label:'Max tokens',value:'500k / day'},{label:'Max requests',value:'5,000 / day'},{label:'Resets',value:'Daily at midnight IST'}],
+ budgets:[{label:'Spend cap',value:'$200 / month'},{label:'Resets',value:'Monthly, calendar-aligned'}],
+ guardrails:[{layer:'Gateway (Bifrost key)',items:['PII redaction','Prompt-injection filter']},{layer:'Product',items:['Blocked topics list']}]};
+const VIEWER_DETAIL:Omit<UserDetail,'inherits'>={
+ skills:[{name:'Chat',subs:['General Q&A']}],
+ models:[{name:'Llama 4 Maverick'}],
+ rateLimits:[{label:'Max tokens',value:'50k / day'},{label:'Max requests',value:'500 / day'},{label:'Resets',value:'Daily at midnight IST'}],
+ budgets:[{label:'Spend cap',value:'$20 / month'},{label:'Resets',value:'Monthly, calendar-aligned'}],
+ guardrails:[{layer:'Gateway (Bifrost key)',items:['PII redaction','Prompt-injection filter','Toxicity filter','Topic allowlist']},{layer:'Product',items:['Blocked topics list','Citation-required answers','Read-only actions']}]};
+// Effective settings are derived from the user's CURRENT Role cell, so editing a user's role
+// in the grid changes what this panel shows. Per-user exceptions are applied on top and
+// badged as overrides; an override that the new role already grants simply disappears.
+export function userDetail(row:{id:string;values:string[]}):UserDetail{
+ const role=row.values[3]||'FDE';
+ const base=role==='Admin'?ADMIN_DETAIL:role==='Viewer'?VIEWER_DETAIL:FDE_DETAIL;
+ const d:UserDetail={inherits:role,skills:[...base.skills],models:[...base.models],rateLimits:[...base.rateLimits],budgets:[...base.budgets],guardrails:[...base.guardrails]};
+ if(row.id==='seed-usr-03'){ // Likith: frontier model access and a raised token ceiling
+  if(!d.models.some(m=>m.name==='Claude Sonnet 4.5'))d.models=[...d.models,{name:'Claude Sonnet 4.5',override:true}];
+  if(role!=='Admin')d.rateLimits=d.rateLimits.map(l=>l.label==='Max tokens'?{...l,value:'750k / day',override:true}:l);
+ }
+ if(row.id==='seed-usr-05'){ // Sriniketh: Document QA (citation answers) on top of a Viewer role
+  if(!d.skills.some(sk=>sk.name==='Document QA'))d.skills=[...d.skills,{name:'Document QA',subs:['Citation answers'],override:true}];
+ }
+ return d;
+}
+export function adminSheet(name:string){return ADMIN_SHEETS.concat([ACTIVITY_SHEET]).find(s=>s.name===name);}
